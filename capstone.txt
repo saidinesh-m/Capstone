@@ -1,0 +1,62 @@
+All column names:patient_id	cxr_filename	cxr_time_offset	cxr_year	cxr_path	cxr_pixel_spacing_x	cxr_pixel_spacing_y	age	sex	ivsd	lvpwd	lvidd	slvh	dlv	composite_slvh_dlv	heart_transplant	lung_transplant	pacemaker_or_icd
+
+
+
+ivsd-Interventricular Septal Thickness in Diastole(cont)
+lvpwd-Left Ventricular Posterior Wall Thickness in Diastole(cont)
+lvidd-Left Ventricular Internal Diameter in Diastole(cont)
+slvh-Structural Left Ventricular Hypertrophy(BIN)
+dlv-Dilated Left Ventricle(BIN)
+
+
+Binary columns (0 / 1)
+These are labels or yes/no indicators:
+slvh, dlv, composite_slvh_dlv
+heart_transplant
+pacemaker_or_icd
+lung_transplant
+
+ivsd
+Interventricular Septal thickness in Diastole (cm)
+Thickness of the wall between left and right ventricles.
+Typical values:
+Normal: ~0.6 – 1.0 cm
+Thickened (hypertrophy): > 1.1 cm
+Hypertrophy Levels:
+Mild: 1.1–1.3 cm.
+Moderate: 1.4–1.6 cm.
+Severe: >= 1.7 cm.
+
+lvpwd
+Left Ventricular Posterior Wall thickness in Diastole (cm)
+Typical values:
+Normal: ~0.6 – 1.0 cm
+Abnormal: > 1.1 cm
+Hypertrophy Levels:
+| Condition      | IVSD / LVPWD     |
+| -------------- | ---------------- |
+| Normal         | ≤ 1.0 cm         |
+| Mild LVH       | 1.1 – 1.3 cm     |
+| Moderate LVH   | 1.4 – 1.6 cm     |
+| **Severe LVH** | **≥ 1.7–1.8 cm** |
+
+lvidd(echo)
+Left Ventricular Internal Diameter in Diastole (cm)
+Size of the LV cavity when the heart is relaxed.
+Typical values:
+Normal adult: ~3.5 – 5.9 cm
+Dilated LV: > 6.0 cm
+
+
+If lvidd is above threshold
+Dilated left ventricle
+Encoded as:
+dlv = 1
+
+
+LV Mass Index (LVMI)
+LV mass indexed to body surface area (BSA)
+with sex-specific thresholds
+LV Mass formula
+LV mass ∝ (IVSD + LVIDD + LVPWD)^3 − (LVIDD)^3
+
