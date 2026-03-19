@@ -1,0 +1,76 @@
+1️⃣ Dataset Layer(CXRDataset)
+
+Reads CSV
+Dynamically detects image column
+Extracts multi-label targets
+Uses Albumentations for augmentation
+Returns tensors ready for model
+
+2️⃣ Preprocessing Layer
+
+CLAHE:
+Chest X-rays often have low contrast
+CLAHE enhances lung and heart region visibility
+
+
+Normalization:
+Model uses ImageNet pretrained weights
+Must normalize using ImageNet mean/std
+
+Augmentation:
+Prevent overfitting
+Improve generalization
+
+
+3️⃣ Model Architecture — DenseNet121
+
+
+Pretrained on ImageNet
+Transfer learning
+Replaced classifier layer
+Multi-label output (no softmax)
+Using logits (no sigmoid inside model)
+
+
+
+4️⃣ Loss Function — Focal Loss
+
+Medical datasets are imbalanced, Some conditions rare (e.g., transplant)
+Focal loss reduces impact of easy negatives
+Gamma controls focus
+Alpha balances class weights
+
+
+5️⃣ Training Engine (Trainer Class)
+
+Separate train and validation loops
+Uses tqdm for monitoring
+Computes metrics after validation
+Uses AUC for model selection
+Early stopping prevents overfitting
+Saves best model checkpoint
+
+
+6️⃣ Evaluation Metrics
+
+AUC → threshold independent
+F1 → balance precision and recall
+Recall → critical in medical diagnosis
+Accuracy → less reliable in imbalanced datasets
+
+
+
+7️⃣ Explainability — Grad-CAM
+
+Extracts gradients from last convolutional layer
+Highlights important regions
+Improves trust and interpretability
+Helps detect model bias
+
+8️⃣ Deployment — Streamlit App
+
+Loads trained checkpoint
+Upload X-ray
+Displays probabilities
+Shows Grad-CAM heatmap
+Real-time inference

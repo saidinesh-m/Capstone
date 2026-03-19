@@ -1,0 +1,16 @@
+System Pipeline
+
+
+CSV Labels + X-ray Images
+        ↓
+Preprocessing (CLAHE + Normalization)
+        ↓
+DenseNet-121 (Transfer Learning)
+        ↓
+Focal Loss (Class Imbalance)
+        ↓
+Metrics (AUC, F1, Recall)
+        ↓
+Grad-CAM Explainability
+        ↓
+Streamlit Deployment UI	

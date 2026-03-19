@@ -240,7 +240,7 @@ if __name__ == "__main__":
     parser.add_argument('--image_dir', type=str, default='data/images', help='Path to image directory')
     parser.add_argument('--image_path', type=str, help='Path to single image for prediction')
     parser.add_argument('--weights', type=str, help='Path to trained weights')
-    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=25)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=1e-4)
 

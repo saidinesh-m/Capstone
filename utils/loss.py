@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, reduction='mean'):
+    def __init__(self, alpha=2, gamma=3, reduction='mean'):
         """
         Focal Loss for addressing class imbalance.
         Args:
