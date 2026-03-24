@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score, f1_score, accuracy_score, precision_score, recall_score, confusion_matrix
 
-def compute_metrics(y_true, y_pred, threshold=0.3): #threshold=0.5):
+def compute_metrics(y_true, y_pred, threshold=0.3983): #threshold=0.5): the best threshold so far is 0.3. 
     """
     Compute metrics for multi-label classification.
     Args:
