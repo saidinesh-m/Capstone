@@ -92,15 +92,19 @@ def main(args):
             return
 
         # Assuming simple random split for demo purposes
-        train_df = df.sample(frac=0.8, random_state=42)
-        valid_df = df.drop(train_df.index)
+        train_df = df.sample(frac=0.7, random_state=42)
+        temp_df = df.drop(train_df.index)
+
+        valid_df = temp_df.sample(frac=0.5, random_state=42)
+        test_df = temp_df.drop(valid_df.index)
         
         train_dataset = CXRDataset(train_df, args.image_dir, transforms=get_train_transforms(), classes=CLASSES)
         valid_dataset = CXRDataset(valid_df, args.image_dir, transforms=get_valid_transforms(), classes=CLASSES)
         
         train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
         valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
-        
+        test_dataset = CXRDataset(test_df, args.image_dir, transforms=get_valid_transforms(), classes=CLASSES)
+        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
         print(f"Train size: {len(train_dataset)}, Valid size: {len(valid_dataset)}")
 
     # 2. Model Setup
@@ -160,6 +164,87 @@ def main(args):
         cv2.imwrite(out_path, (heatmap * 255).astype(np.uint8))
         print(f"Explainability heatmap saved to {out_path}")
 
+    elif args.mode == 'test':
+        if not os.path.exists(args.csv_path):
+            print(f"Error: Dataset CSV not found at {args.csv_path}")
+            return
+
+        df = pd.read_csv(args.csv_path)
+        df.columns = df.columns.str.strip()
+
+        # Identify correct column
+        if 'cxr_filename' in df.columns:
+            id_col = 'cxr_filename'
+        elif 'cal_filename' in df.columns:
+            id_col = 'cal_filename'
+        elif 'Image Index' in df.columns:
+            id_col = 'Image Index'
+        else:
+            id_col = df.columns[0]
+
+        valid_indices = []
+        missing_count = 0
+
+        for idx, row in df.iterrows():
+            img_id = os.path.basename(str(row[id_col]).strip())  # use id_col, not hardcoded
+
+            possible_paths = [
+                os.path.join(args.image_dir, img_id),
+                os.path.join(args.image_dir, img_id + '.png'),
+                os.path.join(args.image_dir, img_id + '.jpg'),
+                os.path.join(args.image_dir, img_id + '.jpeg'),
+            ]
+
+            if any(os.path.exists(p) for p in possible_paths):
+                valid_indices.append(idx)
+            else:
+                missing_count += 1
+
+        print(f"Found {len(valid_indices)} valid images. Missing: {missing_count}.")
+
+        df = df.loc[valid_indices]
+
+        if len(df) == 0:
+            print("ERROR: No valid images found. Check CSV and image paths.")
+            # Debug: print first few raw values to help diagnose
+            raw_df = pd.read_csv(args.csv_path)
+            raw_df.columns = raw_df.columns.str.strip()
+            print(f"\nFirst 3 values in '{id_col}' column:")
+            for val in raw_df[id_col].head(3):
+                print(f"  CSV value: '{val}'  -> basename: '{os.path.basename(str(val).strip())}'")
+            print(f"\nFiles in image dir (first 5):")
+            try:
+                for f in list(os.listdir(args.image_dir))[:5]:
+                    print(f"  {f}")
+            except Exception as e:
+                print(f"  Could not list dir: {e}")
+            return
+
+        # Same split as training to get the same held-out test set
+        train_df = df.sample(frac=0.7, random_state=42)
+        temp_df = df.drop(train_df.index)
+        valid_df = temp_df.sample(frac=0.5, random_state=42)
+        test_df = temp_df.drop(valid_df.index)
+
+        print(f"Testing on {len(test_df)} unseen images.")
+        if len(test_df) == 0:
+            print("ERROR: No unseen test data found after split. Dataset may be too small.")
+            return
+
+        test_dataset = CXRDataset(test_df, args.image_dir, transforms=get_valid_transforms(), classes=CLASSES)
+        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+        if not args.weights:
+            print("Error: --weights required for testing.")
+            return
+
+        criterion = FocalLoss()
+        trainer = Trainer(model, criterion, None, None, device)
+        _, metrics = trainer.validate(test_loader)
+
+        print("\nTest Results (UNSEEN DATA):")
+        for k, v in metrics.items():
+            print(f"{k}: {v:.4f}")
 
     # 5. Evaluation Mode
     elif args.mode == 'evaluate':
@@ -171,36 +256,42 @@ def main(args):
         df = pd.read_csv(args.csv_path)
         df.columns = df.columns.str.strip()
         
+
+        
         # Identify ID column
+        # Identify correct column
+        # Identify correct column (SAME as dataset.py)
+        # Identify correct column (SAME as evaluation)
         if 'cxr_filename' in df.columns:
             id_col = 'cxr_filename'
         elif 'cal_filename' in df.columns:
-             id_col = 'cal_filename'
+            id_col = 'cal_filename'
         elif 'Image Index' in df.columns:
             id_col = 'Image Index'
         else:
             id_col = df.columns[0]
-            
-        # Filter existing images
+
         valid_indices = []
         for idx, row in df.iterrows():
-            img_id = str(row[id_col])
+            img_id = os.path.basename(str(row[id_col]))
+
             possible_paths = [
                 os.path.join(args.image_dir, img_id),
                 os.path.join(args.image_dir, img_id + '.png'),
                 os.path.join(args.image_dir, img_id + '.jpg'),
                 os.path.join(args.image_dir, img_id + '.jpeg'),
-                os.path.join(args.image_dir, os.path.basename(img_id)),
-                os.path.join(args.image_dir, os.path.basename(img_id) + '.png'),
-                os.path.join(args.image_dir, os.path.basename(img_id) + '.jpg'),
-                 os.path.join(args.image_dir, os.path.basename(img_id) + '.jpeg')
             ]
+
             if any(os.path.exists(p) for p in possible_paths):
                 valid_indices.append(idx)
-        
+
         df = df.loc[valid_indices]
+
+        print(f"After filtering: {len(df)} valid images")
+
+        # SAFETY CHECK
         if len(df) == 0:
-            print("Error: No images found.")
+            print("Error: No valid images found after filtering.")
             return
 
         # For evaluation, we ideally want a held-out set. 
@@ -233,9 +324,10 @@ def main(args):
         for k, v in metrics.items():
             print(f"{k}: {v:.4f}")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CXR Detection System")
-    parser.add_argument('--mode', type=str, required=True, choices=['train', 'predict', 'evaluate'], help='Mode: train, predict, or evaluate')
+    parser.add_argument('--mode', type=str, required=True, choices=['train', 'predict', 'evaluate', 'test'], help='Mode: train, predict, evaluate, or test')
     parser.add_argument('--csv_path', type=str, default='data/train_labels.csv', help='Path to dataset CSV')
     parser.add_argument('--image_dir', type=str, default='data/images', help='Path to image directory')
     parser.add_argument('--image_path', type=str, help='Path to single image for prediction')

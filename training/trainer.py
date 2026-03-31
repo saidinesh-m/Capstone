@@ -69,33 +69,36 @@ class Trainer:
         all_targets = np.vstack(all_targets)
         from evaluation.threshold_tuning import find_best_threshold
 
-        best_thresholds = find_best_threshold(all_targets, all_preds)
+        best_thresholds = find_best_threshold(all_targets, all_preds) # returns list of best thresholds for each class
 
         print("\nBest Thresholds per Class:")
         for i, t in enumerate(best_thresholds):
-            print(f"Class {i}: {t:.3f}")
+            print(f"Class {i}: {t:.3f}") # Print best threshold for each class
 
+        from sklearn.metrics import roc_curve, roc_auc_score
         import matplotlib.pyplot as plt
-        from sklearn.metrics import roc_curve, auc
 
         plt.figure()
 
         for i in range(all_targets.shape[1]):
             fpr, tpr, _ = roc_curve(all_targets[:, i], all_preds[:, i])
-            roc_auc = auc(fpr, tpr)
+            roc_auc = roc_auc_score(all_targets[:, i], all_preds[:, i]) # Compute AUC for this class
             
             plt.plot(fpr, tpr, label=f'Class {i} (AUC = {roc_auc:.2f})')
 
-        # Plot diagonal line (random model)
+        # diagonal line
         plt.plot([0, 1], [0, 1], 'k--')
+
+        
+        overall_auc = roc_auc_score(all_targets, all_preds, average='macro') # Compute overall AUC across all classes
+        plt.title(f'ROC Curve (Overall AUC = {overall_auc:.4f})')
 
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-        plt.title('ROC Curve (Multi-Class)')
         plt.legend()
 
         plt.savefig('roc_curve.png')
-        print("ROC curve saved as roc_curve.png")
+        print(f"ROC curve saved. Overall AUC: {overall_auc:.4f}")
 
         plt.close()
                 
